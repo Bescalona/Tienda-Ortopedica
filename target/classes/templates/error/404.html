@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="layout/layout :: head"></head>
+<body>
+
+	<header th:replace="layout/layout :: header"></header>
+
+	<div class="container py-4">
+
+		<div class="card bg-danger text-white">
+			<div class="card-header"><h1 style="text-align: center;" >404</h1></div>
+			<div class="card-body">
+			<!-- Se puede acceder al nombre del usuario a traves de th:text="${#authentication.name} o como se hace en el layout-->
+				<h5 class="card-title">
+					Los sentimos, la página seleccionada no existe
+				</h5>
+				<a th:href="@{/listar}" class="btn btn-outline-light" role="button">Ir
+					al inicio</a>
+
+			</div>
+		</div>
+	</div>
+
+	<footer th:replace="layout/layout :: footer"></footer>
+</body>
+</html>

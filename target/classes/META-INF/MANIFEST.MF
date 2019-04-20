@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Implementation-Title: spring-boot-ortopedia
+Implementation-Version: 0.0.1-SNAPSHOT
+Built-By: Bastian
+Implementation-Vendor-Id: com.bescalonadev.springboot.ortopedia.app
+Build-Jdk: 1.8.0_181
+Implementation-URL: https://projects.spring.io/spring-boot/#/spring-bo
+ ot-starter-parent/spring-boot-ortopedia
+Created-By: Maven Integration for Eclipse
+

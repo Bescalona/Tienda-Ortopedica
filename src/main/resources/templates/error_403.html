@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="layout/layout :: head"></head>
+<body>
+
+	<header th:replace="layout/layout :: header"></header>
+
+	<div class="container py-4">
+
+		<div class="card bg-danger text-white">
+			<div class="card-header">
+				
+				<!-- Se puede acceder al nombre del usuario a traves de th:text="${#authentication.name} o como se hace en el layout-->
+				<h5 class="card-title">
+					Los sentimos <span th:text="${#authentication.name}"></span>,
+					no estas autorizado para acceder a este recurso.
+				</h5>
+				<a th:href="@{/listar}" class="btn btn-outline-light" role="button">Ir
+					al inicio</a>
+			</div>
+			<div class="card-body" style="text-align: center;" >
+				<span ><img th:src="@{/images/denegado.png}" alt="Spring logo" /></span>
+			</div>
+		</div>
+	</div>
+
+	<footer th:replace="layout/layout :: footer"></footer>
+</body>
+</html>

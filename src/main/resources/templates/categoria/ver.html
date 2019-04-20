@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="layout/layout :: head"></head>
+<body>
+	<header th:replace="layout/layout :: header"></header>
+	<div class="container py-4">
+		<div class="card bg-light">
+			<div class="card-header" th:text="${titulo}"></div>
+			<div class="card-body">
+				<h4 class="card-title">
+					<a th:href="@{'/categoria/listar'}"
+						class="btn btn-secondary btn-xs">&laquo; volver</a>
+				</h4>
+
+				<ul class="list-group">
+					<li class="list-group-item" style="background-color:#51b4ff; color: white"
+						><b>Datos de la categoria</b></li>
+					<li class="list-group-item" th:text="'Folio: ' + ${categoria.id}"></li>
+					<li class="list-group-item"
+						th:text="'Nombre: ' + ${categoria.nombre}"></li>
+					
+				</ul>
+				<div class="alert alert-info my-4"
+					th:if="${#lists.isEmpty(productos)}"
+					th:text="'No existen productos relacionados a esta categoria'"></div>
+				<div style="overflow-x: scroll;">
+					
+					<table th:if="${not #lists.isEmpty(productos)}"
+						class="table table-striped table-hover table-bordered my-3">
+						<thead style="background-color:#51b4ff; color: white">
+							<tr>
+								<th colspan="4" style="text-align: center;"><b>Productos relacionados</b></th>
+							</tr>
+							<tr>
+								<th>Nombre</th>
+								<th>Descripci&oacute;n</th>
+								<th>Precio</th>
+								<th>Stock</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="producto: ${productos}">
+								<td th:text="${producto.nombre}"></td>
+								<td th:text="${producto.descripcion}"></td>
+								<td th:text="${producto.precioFormateado()}"></td>
+								<td th:text="${producto.stock}"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<h4 class="card-title">
+					<a th:href="@{'/categoria/listar'}"
+						class="btn btn-secondary btn-xs">&laquo; volver</a>
+				</h4>
+
+			</div>
+		</div>
+	</div>
+	<footer th:replace="layout/layout :: footer"></footer>
+	<script th:replace="factura/js/autocomplete-productos :: javascript"></script>
+</body>
+</html>

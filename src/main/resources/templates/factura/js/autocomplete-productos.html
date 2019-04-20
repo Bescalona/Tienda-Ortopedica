@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<script type="text/javascript" th:fragment="javascript">
+	
+	//Hace una llamada ajax al metodo cargarProductos del controlador factura y luego muestra los items que coinciden con el termino entregado por el usuario
+	$("#buscar_producto").autocomplete({
+		source: function(request, response){
+			$.ajax({
+				url:"/factura/cargar-productos/" + request.term,
+				dataType:"json",
+				data:{
+					term: request.term
+				},
+				success: function(data){
+					response($.map(data, function(item){
+						return{
+							value: item.id,
+							label: item.nombre,
+							precio: item.precio,
+							stock: item.stock,
+							descripcion: item.descripcion,
+							categoria: item.categoria,
+						};
+					}));
+				},
+			});
+		},
+		select: function(event, ui){
+			if(itemsHelper.hasProducto(ui.item.value) && ui.item.stock>=1){
+				itemsHelper.incrementaCantidad(ui.item.value, ui.item.stock, ui.item.precio);
+				return false;
+			}
+			if(ui.item.stock<=0){
+				Swal.fire({
+					  type: 'error',
+					  title: 'Error',
+					  text: "No existe stock de: "+ ui.item.label,
+					})
+			}else{
+				var linea = $("#plantillaItemsFactura").html();
+				linea = linea.replace(/{ID}/g, ui.item.value);
+				linea = linea.replace(/{NOMBRE}/g, ui.item.label);
+				linea = linea.replace(/{CATEGORIA}/g, ui.item.categoria.nombre);
+				linea = linea.replace(/{PRECIO}/g, ui.item.precio);
+				linea = linea.replace(/{PRECIOFORMATEADO}/g, format(ui.item.precio));
+				linea = linea.replace(/{DESCRIPCION}/g, ui.item.descripcion);
+				linea = linea.replace(/{STOCK}/g, ui.item.stock);
+				$("#cargarItemProductos tbody").append(linea);
+				itemsHelper.calcularImporte(ui.item.value,ui.item.stock,ui.item.precio,1);
+				return false;
+			}
+			
+		}
+	});
+	//cuando se envia el formulario de la factura eliminamos la plantilla
+	$("form").submit(function(){
+		$("#plantillaItemsFactura").remove();
+		return;
+	})
+	
+	//Cuando se carga el formulario llamo a la funcion updateCategoria
+	$(document).ready(function() {
+	     updateCategoria();
+	});
+	
+	//Carga todas las categorias existentes en el select del formulario
+	function updateCategoria() {        
+	    $.ajax({
+	        url: "/cargar-categorias/",
+	        dataType:"json",
+	        success: function(respuesta) {
+	        	
+	        	var content ="";
+	            
+	            if(respuesta.length > 0) {
+	                for(var i=0; i<respuesta.length; i++) {
+	                    content += "<option value='" + respuesta[i].id + "'>"+respuesta[i].nombre+"</option>";
+	                }
+	            }else {
+	                content += '<option>Sin categorias disponibles<option>';
+	            }
+	            
+	            $('#categoria').empty();
+	            $('#categoria').html(content);
+	        },
+	        error: function() {
+	            console.log("No se ha podido obtener la información");
+	        }
+	    });
+	} 
+	
+	//Carga todos los productos que pertenecen a la categoria seleccionada
+	function updateProducto() {        
+	    $.ajax({
+	        url: "/cargar-productos/",
+	        dataType:"json",
+	        data: {
+                id: $("#categoria").val()
+            },
+	        success: function(respuesta) {
+	        	
+	        	var content = "<option value='" + 0 + "'selected disabled>"+'Seleccione un producto'+"</option>";
+	            
+	            if(respuesta.length > 0) {
+	                for(var i=0; i<respuesta.length; i++) {
+	                    content += "<option value='" + respuesta[i].id + "'>"+respuesta[i].nombre+"</option>";
+	                }
+	            }else {
+	                content += '<option>Sin productos disponibles<option>';
+	            }
+	            
+	            $('#producto').empty();
+	            $('#producto').html(content);
+	        },
+	        error: function() {
+	            console.log("No se ha podido obtener la información");
+	        }
+	    });
+	} 
+	
+	//Muestra como item el producto seleccionado a traves del select de la vista
+	function agregarProducto() {        
+		
+		 $.ajax({
+	        url: "/agregar-producto/",
+	        dataType:"json",
+	        data: {
+	               id: $("#producto").val()
+	           },
+	        success: function(respuesta) {
+	        	
+	        	if(itemsHelper.hasProducto(respuesta.id) && respuesta.stock>=1){
+					itemsHelper.incrementaCantidad(respuesta.id, respuesta.stock ,respuesta.precio);
+					console.log("/agregar-producto/-stock val: "+$("#stock_" + respuesta.id).val());
+				
+					return false;
+				}
+	        	if(respuesta.stock<=0){
+	        		Swal.fire({
+	        			  type: 'error',
+						  title: 'Error',
+						  text: "No existe stock de "+ respuesta.nombre,
+						})
+	        	}else{
+	        		var linea = $("#plantillaItemsFactura").html();
+					linea = linea.replace(/{ID}/g, respuesta.id);
+					linea = linea.replace(/{NOMBRE}/g, respuesta.nombre);
+					linea = linea.replace(/{CATEGORIA}/g, respuesta.categoria.nombre);
+					linea = linea.replace(/{PRECIO}/g, respuesta.precio);
+					linea = linea.replace(/{PRECIOFORMATEADO}/g, format(respuesta.precio));
+					linea = linea.replace(/{DESCRIPCION}/g, respuesta.descripcion);
+					linea = linea.replace(/{STOCK}/g, respuesta.stock);
+					$("#cargarItemProductos tbody").append(linea);
+					itemsHelper.calcularImporte(respuesta.id,respuesta.stock ,respuesta.precio, 1);
+					return false;
+	        	}
+				
+	        },
+	        error: function() {
+	            console.log("No se ha podido obtener la información");
+	        }
+	    });
+	}
+	
+	
+	var itemsHelper = {
+			
+			//Calcula el precio total de un item, ademas aumenta o disminute el stock dependiendo de la cantidad seleccionada en la vista
+			calcularImporte: function(id, stock ,precio, cantidad){
+				console.log("STOCK: "+parseInt(stock));
+				console.log("CANTIDAD: "+parseInt(cantidad));
+				console.log("STOCK-CANTIDAD: "+(parseInt(stock)-parseInt(cantidad)));
+				if(cantidad>stock){
+	        		Swal.fire({
+	        			  type: 'error',
+						  title: 'Error',
+						  text: "La cantidad seleccionada supera el stock",
+						})
+					$.ajax({
+				        url: "/recuperar-stock/",
+				        dataType:"json",
+				        data: {
+			                id: id
+			            },
+				        success: function(respuesta) {
+				        	$("#stock_"+id).val(respuesta-1);	
+				        	$("#cantidad_"+id).val(1);	
+				        	$("#total_importe_"+id).html(parseInt(precio));
+							$("#total_formateado_"+id).html(format(parseInt(precio)));
+							itemsHelper.calcularGranTotal();
+				        },
+				        error: function() {
+				            console.log("No se ha podido obtener la información");
+				        }
+				    });	
+					
+	        	}else if(cantidad<=0){
+	        		Swal.fire({
+	        			  type: 'error',
+						  title: 'Error',
+						  text: "La cantidad seleccionada no puede ser menor o igual a cero",
+						})
+					$.ajax({
+				        url: "/recuperar-stock/",
+				        dataType:"json",
+				        data: {
+			                id: id
+			            },
+				        success: function(respuesta) {
+				        	$("#stock_"+id).val(respuesta-1);	
+				        	$("#cantidad_"+id).val(1);
+				        	$("#total_importe_"+id).html(parseInt(precio));
+							$("#total_formateado_"+id).html(format(parseInt(precio)));
+							itemsHelper.calcularGranTotal();
+				        },
+				        error: function() {
+				            console.log("No se ha podido obtener la información");
+				        }
+				    });		
+				
+	        	}else{	
+	        		$("#stock_"+id).val(parseInt(stock)-parseInt(cantidad));
+					$("#total_importe_"+id).html(parseInt(precio)*parseInt(cantidad));
+					$("#total_formateado_"+id).html(format(parseInt(precio)*parseInt(cantidad)));
+					this.calcularGranTotal();
+	        	}
+				
+				
+			},
+			
+			hasProducto: function(id){
+				var resultado = false;
+				
+				$('input[name="item_id[]"]').each(function(){
+					if(parseInt(id) == parseInt($(this).val())){
+						resultado = true;
+					}
+				});
+				
+				return resultado;
+			}, 
+			
+			//Aumenta la cantidad de uun item al momento de volver a seleccionarlo ya sea con el select producto o la barra que busca por terminos
+			incrementaCantidad: function(id, stock, precio){
+				if($("#stock_"+id).val()>0){
+					var cantidad = $("#cantidad_" + id).val() ? parseInt($("#cantidad_" + id).val()) : 0;
+					$("#cantidad_"+id).val(++cantidad);
+					this.calcularImporte(id, stock, precio, cantidad);
+				}else{
+					
+					$.ajax({
+				        url: "/recuperar-nombre/",
+				        dataType:"text",
+				        data: {
+			                id: id
+			            },
+				        success: function(respuesta) {
+				        	console.log("Mensaje: "+respuesta);
+				        	Swal.fire({
+							  type: 'error',
+							  title: 'Error',
+							  text: "No existe stock de "+respuesta,
+							})	
+				        	
+				        },
+				        error: function() {
+				            console.log("No se ha podido obtener la información");
+				        }
+				    });		       	
+				}
+			}, 
+			
+			//Elimina un item de la factura (es llamada por la x en rojo de la vista del formulario factura)
+			eliminarLineaFactura: function(id){
+				$("#row_"+id).remove();
+				this.calcularGranTotal();
+			}, 
+			
+			//Suma los precios totales de todos los item de la factura
+			calcularGranTotal: function(){
+				var total=0;
+				$('span[id^="total_importe_"]').each(function(){
+					//this equivale a cada total_importe, total es la suma de todos los total_importe_{ID}
+					total+= parseInt($(this).html());
+				});
+				$('#gran_total').html(format(total));
+			}
+	}
+	
+	//Le da un formato con puntos y signo peso a los precios que se encuentran en la factura
+	function format(precio)
+	{
+		var num = precio.toString().replace(/\./g,'');
+		if(!isNaN(num)){
+			num = num.toString().split('').reverse().join('').replace(/(?=\d*\.?)(\d{3})/g,'$1.');
+			num = num.split('').reverse().join('').replace(/^[\.]/,'');
+		} 
+		
+		return "$"+ num;
+	}	 
+	
+	//Llama al metodo eliminar del controlador para eliminar una factura
+	function eliminarObjeto(url){
+		Swal.fire({
+			  title: 'Estás seguro?',
+			  text: "No podras revertir esto!",
+			  type: 'warning',
+			  showCancelButton: true,
+			  cancelButtonText: "Cancelar",
+			  confirmButtonColor: '#3085d6',
+			  cancelButtonColor: '#d33',
+			  confirmButtonText: 'Si, borrar!'
+			}).then((result) => {
+			  if (result.value) {
+				  window.location=url;
+			  }
+			})
+	}
+	
+</script>
+</body>
+</html>

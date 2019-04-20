@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="layout/layout :: head"></head>
+<body>
+	<header th:replace="layout/layout :: header"></header>
+
+	<div class="container py-4">
+		<div class="card bg-light">
+			<div class="card-header" th:text="${titulo}"></div>
+			<div class="card-body">
+				<div style="overflow:hidden;">
+					<!-- Si el largo de la foto es mayor que 0, la muestra -->
+					<img th:if="${#strings.length(producto.foto) > 0}"
+						class="img-thumbnail rounded float-left" style="max-width: 25%;"
+						th:src="@{'/uploads/' + ${producto.foto}}" th:alt="${producto.foto}" />
+					<ul class="list-group">
+						<li class="list-group-item" th:text="'Nombre: '+${producto.nombre}"></li>
+						<li class="list-group-item" th:text="'Categoria: '+${producto.categoria.nombre}"></li>
+						<li class="list-group-item" th:text="'Precio: '+${producto.precioFormateado()}"></li>
+						<li class="list-group-item" th:text="'Stock: '+${producto.stock}"></li> 
+					</ul>
+				</div>	
+				
+				<div class="card border-info mb-4 mt-4" style="max-width: 20rem;">
+					<div class="card-header">Descripción</div>
+					<div class="card-body">
+						<p class="card-text" th:text="${producto.descripcion}"
+							th:if="${not #strings.isEmpty(producto.descripcion)}"></p>
+						<h4 class="card-title"
+							th:if="${#strings.isEmpty(producto.descripcion)}"
+							th:text="'No tiene descripción'"></h4>
+					</div>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+	<footer th:replace="layout/layout :: footer"></footer>
+</body>
+</html>
